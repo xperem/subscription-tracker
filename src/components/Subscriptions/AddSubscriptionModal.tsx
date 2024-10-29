@@ -58,7 +58,7 @@ const AddSubscriptionModal: React.FC<AddSubscriptionModalProps> = ({ open, onClo
   }, [open]);
 
   return (
-    <Dialog open={open} onClose={() => { resetFields(); onClose(); }} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={() => { resetFields(); onClose(); }} fullWidth maxWidth="sm" disableEnforceFocus>
       <DialogTitle sx={{ paddingBottom: 2 }}>Ajouter un abonnement</DialogTitle>
       <DialogContent>
         <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>

@@ -4,9 +4,10 @@ import { Subscription } from '../types/Subscription';
 
 interface SubscriptionContextType {
   subscriptions: Subscription[];
+  loading: boolean;
   addNewSubscription: (subscription: Omit<Subscription, 'id' | 'user_id'>) => Promise<void>;
   removeSubscription: (id: string) => Promise<void>;
-  loading: boolean; // Ajout de `loading`
+  updateSubscription: (subscription: Subscription) => Promise<void>;
 }
 
 interface SubscriptionProviderProps {
@@ -17,48 +18,63 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ children }) => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [loading, setLoading] = useState<boolean>(true); // Initialisation de l'état `loading`
+  const [loading, setLoading] = useState<boolean>(true);
 
+  // Fonction pour récupérer tous les abonnements
   const fetchSubscriptions = async () => {
-    setLoading(true); // Début du chargement
-    const { data, error } = await supabase
-      .from('subscription')
-      .select('*');
-
+    setLoading(true);
+    const { data, error } = await supabase.from('subscription').select('*');
+    
     if (error) {
-      console.error('Error fetching subscriptions:', error);
-    } else if (data && Array.isArray(data)) {
-      setSubscriptions(data as unknown as Subscription[]); // Conversion explicite vers `Subscription[]`
+      console.error('Erreur lors de la récupération des abonnements:', error);
     } else {
-      console.error('Unexpected data format', data);
-      setSubscriptions([]);
+      setSubscriptions(data as unknown as Subscription[]);
     }
-    setLoading(false); // Fin du chargement
+    setLoading(false);
   };
 
+  // Fonction pour ajouter un nouvel abonnement
   const addNewSubscription = async (subscription: Omit<Subscription, 'id' | 'user_id'>) => {
-    const { data, error } = await supabase
-      .from('subscription')
-      .insert(subscription)
-      .select();
+    const { data, error } = await supabase.from('subscription').insert([subscription]).select();
 
     if (error) {
-      console.error('Error adding subscription:', error);
-    } else if (data && Array.isArray(data)) {
+      console.error('Erreur lors de l’ajout de l’abonnement:', error);
+    } else if (data) {
       setSubscriptions((prev) => [...prev, ...(data as unknown as Subscription[])]);
     }
   };
 
+  // Fonction pour supprimer un abonnement
   const removeSubscription = async (id: string) => {
-    const { error } = await supabase
-      .from('subscription')
-      .delete()
-      .match({ id });
+    const { error } = await supabase.from('subscription').delete().match({ id });
 
     if (error) {
-      console.error('Error removing subscription:', error);
+      console.error('Erreur lors de la suppression de l’abonnement:', error);
     } else {
       setSubscriptions((prev) => prev.filter((sub) => sub.id !== id));
+    }
+  };
+
+  // Fonction pour mettre à jour un abonnement
+  const updateSubscription = async (subscription: Subscription) => {
+    const { data, error } = await supabase
+      .from('subscription')
+      .update({
+        title: subscription.title,
+        price: subscription.price,
+        type: subscription.type,
+        frequency: subscription.frequency,
+        billingDate: subscription.billingDate,
+      })
+      .eq('id', subscription.id)
+      .select();
+
+    if (error) {
+      console.error('Erreur lors de la mise à jour de l’abonnement:', error);
+    } else if (data) {
+      setSubscriptions((prev) =>
+        prev.map((sub) => (sub.id === subscription.id ? (data[0] as unknown as Subscription) : sub))
+      );
     }
   };
 
@@ -67,7 +83,9 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   }, []);
 
   return (
-    <SubscriptionContext.Provider value={{ subscriptions, addNewSubscription, removeSubscription, loading }}>
+    <SubscriptionContext.Provider
+      value={{ subscriptions, loading, addNewSubscription, removeSubscription, updateSubscription }}
+    >
       {children}
     </SubscriptionContext.Provider>
   );

@@ -1,36 +1,54 @@
 import { supabase } from './supabaseClient';
 import { Subscription } from '../types/Subscription';
 
-// Récupère tous les abonnements d'un utilisateur
-export const fetchSubscriptions = async (userId: string): Promise<Subscription[]> => {
-  const { data, error } = await supabase
-    .from('subscription')
-    .select('*')
-    .eq('user_id', userId);
-
-  if (error) throw error;
-
-  // Vérification de type pour s'assurer que les données sont bien un tableau de Subscription
-  return (data ?? []) as unknown as Subscription[];
+// Récupérer tous les abonnements
+export const fetchSubscriptions = async (): Promise<Subscription[]> => {
+  const { data, error } = await supabase.from('subscription').select('*');
+  
+  if (error) {
+    throw new Error('Erreur lors de la récupération des abonnements');
+  }
+  
+  return data as unknown as Subscription[];
 };
 
-// Ajoute un nouvel abonnement
+// Ajouter un abonnement
 export const addSubscription = async (subscription: Omit<Subscription, 'id'>): Promise<Subscription[]> => {
-  const { data, error } = await supabase
-    .from('subscription')
-    .insert([subscription]);
+  const { data, error } = await supabase.from('subscription').insert([subscription]).select();
 
-  if (error) throw error;
+  if (error) {
+    throw new Error('Erreur lors de l’ajout de l’abonnement');
+  }
 
-  return (data ?? []) as unknown as Subscription[];
+  return data as unknown as Subscription[];
 };
 
-// Supprime un abonnement
+// Supprimer un abonnement
 export const deleteSubscription = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('subscription')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('subscription').delete().eq('id', id);
 
-  if (error) throw error;
+  if (error) {
+    throw new Error('Erreur lors de la suppression de l’abonnement');
+  }
+};
+
+// Mettre à jour un abonnement
+export const updateSubscriptionInDb = async (subscription: Subscription): Promise<Subscription> => {
+  const { data, error } = await supabase
+    .from('subscription')
+    .update({
+      title: subscription.title,
+      price: subscription.price,
+      type: subscription.type,
+      frequency: subscription.frequency,
+      billingDate: subscription.billingDate,
+    })
+    .eq('id', subscription.id)
+    .select();
+
+  if (error || !data) {
+    throw new Error('Erreur lors de la mise à jour de l’abonnement');
+  }
+
+  return data[0] as unknown as Subscription;
 };

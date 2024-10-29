@@ -21,7 +21,7 @@ interface PredefinedSubscriptionsModalProps {
   onAdd: (subscription: Omit<Subscription, 'id' | 'user_id'>) => void;
 }
 
-const predefinedSubscriptions = [
+const predefinedSubscriptions: Omit<Subscription, 'id' | 'user_id' | 'billingDate'>[] = [
   { title: 'Netflix', price: 9.99, type: 'média', frequency: 'mensuel' },
   { title: 'Amazon Prime', price: 9.99, type: 'média', frequency: 'mensuel' },
   { title: 'Disney+', price: 9.99, type: 'média', frequency: 'mensuel' },
@@ -37,7 +37,7 @@ const PredefinedSubscriptionsModal: React.FC<PredefinedSubscriptionsModalProps> 
   const [billingDate, setBillingDate] = useState(dayjs().format('YYYY-MM-DD'));
 
   const handleSubscriptionSelect = (subscription: Omit<Subscription, 'id' | 'user_id' | 'billingDate'>) => {
-    setSelectedSubscription(subscription);
+    setSelectedSubscription({ ...subscription, billingDate });
   };
 
   const handleAdd = () => {
@@ -62,7 +62,7 @@ const PredefinedSubscriptionsModal: React.FC<PredefinedSubscriptionsModalProps> 
             {predefinedSubscriptions.map((subscription, index) => (
               <ListItem
                 key={index}
-                button
+                component="li"
                 onClick={() => handleSubscriptionSelect(subscription)}
               >
                 <ListItemText
